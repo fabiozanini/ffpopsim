@@ -211,6 +211,11 @@ struct clone_t {
 #define RT_VERYLARGE 10000000
 #define RT_CHILDNOTFOUND -35343
 #define RT_NODENOTFOUND -35765
+#define RT_LOCUSNOTFOUND -35762
+#define RT_FITNESS_MISSING -35722
+#define RT_CROSSOVER_MISSING -35721
+#define RT_SEGMENT_MISSING -35720
+#define RT_ERROR_PARSING 1
 
 #include <map>
 #include <set>
@@ -261,9 +266,9 @@ struct step_t {
 
 struct node_t {
 	tree_key_t parent_node;
+	tree_key_t own_key;
 	list < tree_key_t > child_edges;
 	double fitness;
-	tree_key_t own_key;
 	vector <step_t> weight_distribution;
 	int number_of_offspring;
 	int clone_size;
@@ -323,10 +328,14 @@ public:
 	string print_newick();
 	string subtree_newick(tree_key_t root);
 	string print_weight_distribution(tree_key_t node_key);
+	int read_newick(string newick_string);
 
         // construct subtrees
 	int construct_subtree(vector <tree_key_t> subtree_leafs, rooted_tree &other);
 
+private:
+	static int parse_label(std::string label, int *index, int *clone_size, int *branch_length);
+	int parse_subtree(tree_key_t &parent_key, std::string &tree_s);
 
 };
 
@@ -393,6 +402,7 @@ public:
 	double crossover_rate;			// rate of crossover during sex
 	int recombination_model;		//model of recombination to be used
 	bool circular;				//topology of the chromosome
+	double growth_rate;			//growth rate for bottlenecks and the like
 
         // mutation rate (only if not all_polymorphic)
         double get_mutation_rate(){return mutation_rate;}
@@ -421,6 +431,7 @@ public:
 
 	// initialization
 	int set_allele_frequencies(double* frequencies, unsigned long N);
+	int set_genotypes_and_ancestral_state(vector <genotype_value_pair_t> gt, vector <int> anc_state);
 	int set_genotypes(vector <genotype_value_pair_t> gt);
 	int set_wildtype(unsigned long N);
 	int track_locus_genealogy(vector <int> loci);
@@ -468,6 +479,7 @@ public:
 	// allele frequencies
 	double get_allele_frequency(int l) {if (!allele_frequencies_up_to_date){calc_allele_freqs();} return allele_frequencies[l];}
 	double get_derived_allele_frequency(int l) {if (ancestral_state[l]) {return 1.0-get_allele_frequency(l);} else {return get_allele_frequency(l);}}
+	bool get_ancestral_state(int l) {return ancestral_state[l];}
 
 	double get_pair_frequency(int locus1, int locus2);
 	vector <double> get_pair_frequencies(vector < vector <int> > *loci);

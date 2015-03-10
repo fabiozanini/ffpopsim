@@ -7,7 +7,7 @@ content:    Test script for the python bindings (haploid_highd)
 
 # Import module
 import sys
-sys.path.append('../pkg/python')
+sys.path.insert(0, '../pkg/python')
 import numpy as np
 import matplotlib.pyplot as plt
 import FFPopSim as h
@@ -21,6 +21,9 @@ N = 300    # population size
 
 # Construct class
 pop = h.haploid_highd(L, all_polymorphic=False)
+
+# Set a growth rate explicitely
+pop.growth_rate = 2.5
 
 # Start tracking genealogy of two loci
 pop.track_locus_genealogy([3, 60])

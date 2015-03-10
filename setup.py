@@ -43,7 +43,7 @@ import platform as pfm
 includes = ['/usr/include', '/usr/local/include', '/opt/local/include']
 
 # Please add your shared library folders to the following list, where the linker
-# can find Python 2.7 (GLS is static in this branch)
+# can find Python 2.x (GLS is static in this branch)
 library_dirs = ['/ebio/ag-neher/share/programs/lib']
 
 ############################################################################
@@ -74,10 +74,15 @@ includes =  ['static/'+platform+'/include'] + includes + npdis.misc_util.get_num
 library_dirs = ['static/'+platform+'/lib'] + library_dirs
 libs = ['gsl', 'gslcblas']
 
-# Setup function
+
+# Setup
 setup(name='FFPopSim',
       author='Fabio Zanini, Richard Neher',
       author_email='fabio.zanini@tuebingen.mpg.de, richard.neher@tuebingen.mpg.de',
+      description='C++/Python library for population genetics.',
+      license='GPL3',
+      url='http://webdav.tuebingen.mpg.de/ffpopsim/',
+
       version=VERSION,
       package_dir={'': PYBDIR},
 
@@ -85,15 +90,16 @@ setup(name='FFPopSim',
       py_modules=['FFPopSim'],
 
       # This is the C++ extension
-      ext_modules=[Extension('_FFPopSim', [PYBDIR+'/FFPopSim_wrap.cpp',
-                                           SRCDIR+'/haploid_highd.cpp', 
-                                           SRCDIR+'/haploid_lowd.cpp', 
-                                           SRCDIR+'/hivpopulation.cpp',
-                                           SRCDIR+'/hivgene.cpp',
-                                           SRCDIR+'/rootedTree.cpp',
-                                           SRCDIR+'/multiLocusGenealogy.cpp',
-                                           SRCDIR+'/hypercube_lowd.cpp', 
-                                           SRCDIR+'/hypercube_highd.cpp'], 
+      ext_modules=[Extension('_FFPopSim',
+                             sources=[PYBDIR+'/FFPopSim_wrap.cpp',
+                                      SRCDIR+'/haploid_highd.cpp', 
+                                      SRCDIR+'/haploid_lowd.cpp', 
+                                      SRCDIR+'/hivpopulation.cpp',
+                                      SRCDIR+'/hivgene.cpp',
+                                      SRCDIR+'/rootedTree.cpp',
+                                      SRCDIR+'/multiLocusGenealogy.cpp',
+                                      SRCDIR+'/hypercube_lowd.cpp', 
+                                      SRCDIR+'/hypercube_highd.cpp'],
                              include_dirs=includes, 
                              library_dirs=library_dirs,
                              libraries=libs,

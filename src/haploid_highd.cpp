@@ -66,7 +66,7 @@ haploid_highd::haploid_highd(int L_in, int rng_seed, int n_o_traits, bool all_po
 	number_of_clones = 0;
 	mem = false;
 	cumulants_mem = false;
-	generation = -1; //FIXME MERGE: not clear what to do!
+	generation = -1;
 	circular = false;
 	carrying_capacity = 0;
 	mutation_rate = 0;
@@ -75,6 +75,7 @@ haploid_highd::haploid_highd(int L_in, int rng_seed, int n_o_traits, bool all_po
 	recombination_model = CROSSOVERS;
 	fitness_max = HP_VERY_NEGATIVE;
 	all_polymorphic=all_polymorphic_in;
+	growth_rate = 2.0;
 
 	//In case no seed is provided, get one from the OS
 	seed = rng_seed ? rng_seed : get_random_seed();
@@ -273,10 +274,13 @@ int haploid_highd::set_allele_frequencies(double* freq, unsigned long N_in) {
 	return 0;
 }
 
+
+
 /**
  * @brief Initialize the population with genotype counts
  *
  * @param gt vector of genotype_value_pair with genotypes and sizes
+ * @params vector that specifies the ancestral state of the sample. 
  *
  * @returns 0 if successful, nonzero otherwise.
  *
@@ -284,7 +288,24 @@ int haploid_highd::set_allele_frequencies(double* freq, unsigned long N_in) {
  * The carrying capacity is also set to the same number if it is still unset.
  */
 int haploid_highd::set_genotypes(vector <genotype_value_pair_t> gt) {
-	if (HP_VERBOSE) cerr <<"haploid_highd::set_genotypes(vector <genotype_value_pair_t> gt)...";
+  vector <int> tmp_ancestral_state(L(), 0); 
+  return set_genotypes_and_ancestral_state(gt, tmp_ancestral_state);
+}
+
+
+/**
+ * @brief Initialize the population with genotype counts
+ *
+ * @param gt vector of genotype_value_pair with genotypes and sizes
+ * @params vector that specifies the ancestral state of the sample. 
+ *
+ * @returns 0 if successful, nonzero otherwise.
+ *
+ * *Note*: the population size is set as the total sum of counts of all genotypes.
+ * The carrying capacity is also set to the same number if it is still unset.
+ */
+int haploid_highd::set_genotypes_and_ancestral_state(vector <genotype_value_pair_t> gt, vector <int>anc_state) {
+	if (HP_VERBOSE) cerr <<"haploid_highd::set_genotypes_and_ancestral_state(vector <genotype_value_pair_t> gt)...";
 
 	allele_frequencies_up_to_date = false;
 	//reset the ancestral states
@@ -307,6 +328,14 @@ int haploid_highd::set_genotypes(vector <genotype_value_pair_t> gt) {
 	last_clone = 0;
 	provide_at_least(gt.size());
 
+	if (anc_state.size()==L()){
+	  for (size_t locus=0; locus<L(); locus++){
+		ancestral_state[locus]=anc_state[locus];
+	  }
+	}else{
+	  cerr <<"haploid_highd::set_genotypes_and_ancestral_state: length of ancestral state vector must equal number of loci"<<endl;
+	  return HP_BADARG;
+	}
 	for(size_t i = 0; i < gt.size(); i++) {
 		add_genotype(gt[i].genotype, gt[i].val);
 		population_size += gt[i].val;
@@ -1324,7 +1353,7 @@ double haploid_highd::relaxation_value() {
 
 	double logmean_expfitness = get_logmean_expfitness();
 	// the second term is the growth rate when we start from N << carrying capacity
-	double relax = logmean_expfitness + (fmin(0.6931*(double(population_size) / carrying_capacity - 1), 2.0)) + fitness_max;
+	double relax = logmean_expfitness + (fmin(log(growth_rate)*(double(population_size) / carrying_capacity - 1), 2.0)) + fitness_max;
 	if (HP_VERBOSE)	cerr<<"log(<exp(F-Fmax)>) = "<<logmean_expfitness<<"... relaxation value = "<<relax<<"...done."<<endl;
 	return relax;
 }

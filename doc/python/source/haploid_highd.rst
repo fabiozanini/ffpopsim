@@ -4,13 +4,21 @@
 
 haploid_highd Class Reference
 =============================
+haploid_highd_ offers a number of methods, listed below. Global functions related to haploid_highd_ are shown after the methods.
+
+.. contents::
+
+
+Class methods
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 .. autoclass:: haploid_highd
-   :members:
 
    .. automethod:: haploid_highd.__init__
    .. automethod:: haploid_highd.__str__
    .. automethod:: haploid_highd.__repr__
    .. automethod:: haploid_highd.copy
+   .. automethod:: haploid_highd.dump
    .. automethod:: haploid_highd.status
    .. autoattribute:: haploid_highd.L
    .. autoattribute:: haploid_highd.number_of_loci
@@ -79,6 +87,9 @@ haploid_highd Class Reference
    .. automethod:: haploid_highd.plot_divergence_histogram
    .. automethod:: haploid_highd.get_diversity_histogram
    .. automethod:: haploid_highd.plot_diversity_histogram
-   .. automethod:: haploid_highd.genealogy
+   .. autoattribute:: haploid_highd.genealogy
    .. automethod:: haploid_highd.track_locus_genealogy(loci)
 
+Global functions related to haploid_highd_
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. autofunction:: load_haploid_highd
