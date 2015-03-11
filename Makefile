@@ -79,6 +79,30 @@ CXXFLAGS = -c -Wall -$(OPTIMIZATION_LEVEL) -fPIC
 # as library folders for GSL (e.g. -L/opt/local/lib)
 LDFLAGS = -$(OPTIMIZATION_LEVEL)
 
+# FIND THE CURRENT PLATFORM FOR STATIC LINKING (and 64-bitness)
+UNAME_S := $(shell uname -s)
+UNAME_P := $(shell uname -m)
+ifeq ($(UNAME_S),Linux)
+    ifeq ($(UNAME_P),x86_64)
+        CXXFLAGS += -Istatic/linux_64/include
+	LDFLAGS += -Lstatic/linux_64/lib
+    endif
+    ifneq ($(filter %86,$(UNAME_P)),)
+        CXXFLAGS += -Istatic/linux_32/include
+	LDFLAGS += -Lstatic/linux_32/lib
+    endif
+endif
+ifeq ($(UNAME_S),Darwin)
+    ifeq ($(UNAME_P),x86_64)
+        CXXFLAGS += -Istatic/mac_64/include
+	LDFLAGS += -Lstatic/mac_64/lib
+    endif
+    ifneq ($(filter %86,$(UNAME_P)),)
+        CXXFLAGS += -Istatic/mac_32/include
+	LDFLAGS += -Lstatic/mac_32/lib
+    endif
+endif
+
 # Additional options used to regenerate the SWIG files or to rebuild the docs.
 
 # Please set your SWIG executable if you wish to regenerate SWIG C++ files
