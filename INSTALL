@@ -55,7 +55,7 @@ The Python documentation, in case you want to rebuild it, requires:
 -------------------------------------------------------------------
 2. INSTALLATION INSTRUCTIONS
 -------------------------------------------------------------------
-For Python-only users, binaries are provided for Linux and Mac OSX 10.6+,
+For Python-only users, binaries are provided for Linux and Mac OSX 10.6-7,
 for both 32 bit and 64 bit architectures, in the 'build' folder. Copy them
 into a folder included in your PYTHONPATH or call, as a superuser,
 
@@ -65,11 +65,17 @@ to install them. This involves no compiling/linking at all, just plain file
 copying: the binaries are essentially copied into you Python third-party
 packages folder (e.g. /usr/local/lib/python2.7/site-packages/).
 
-For all users, to build FFPopSim, a call
+NOTE: binaries for OSX might not work for recent versions like Mavericks
+and Yosemite, please install BOOST, GSL, and SWIG on your mac and compile
+using:
+
+make python
+make python-install
+
+To BUILD FFPopSim (both C++ and Python), for all users, call:
 
 	make
 
-should take care of everything (both C++ and Python parts are being built).
 Have a look in the pkg folder for the results.
 
 
