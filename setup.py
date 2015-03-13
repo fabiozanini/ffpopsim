@@ -22,7 +22,6 @@ content:    Distutils setup script for the Python bindings of FFPopSim.
             calling this file directly does not clean the 'build' folder.
 '''
 from distutils.core import setup, Extension
-from numpy import distutils as npdis
 
 ############################################################################
 #									   #
@@ -44,7 +43,18 @@ VERSION = '2.0'
 SRCDIR = 'src'
 PYBDIR = SRCDIR+'/python'
 
-includes = includes + npdis.misc_util.get_numpy_include_dirs()
+# When installing on a virtualenv for readthedocs, we don't need this
+try:
+    from numpy import distutils as npdis
+    includes = includes + npdis.misc_util.get_numpy_include_dirs()
+except ImportError:
+    import os
+    on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+    if on_rtd:
+        pass
+    else:
+        raise
+
 libs = ['gsl', 'gslcblas']
 
 # Auxiliary functions
