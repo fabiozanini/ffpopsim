@@ -48,26 +48,18 @@ if version_info >= (3, 0, 0):
     new_instancemethod = lambda func, inst, cls: _FFPopSim.SWIG_PyInstanceMethod_New(func)
 else:
     from new import instancemethod as new_instancemethod
-if version_info >= (2, 6, 0):
-    def swig_import_helper():
-        from os.path import dirname
-        import imp
-        fp = None
-        try:
-            fp, pathname, description = imp.find_module('_FFPopSim', [dirname(__file__)])
-        except ImportError:
-            import _FFPopSim
-            return _FFPopSim
-        if fp is not None:
-            try:
-                _mod = imp.load_module('_FFPopSim', fp, pathname, description)
-            finally:
-                fp.close()
-            return _mod
-    _FFPopSim = swig_import_helper()
-    del swig_import_helper
-else:
-    import _FFPopSim
+
+# Import mock _FFPopSim for RTD
+from mock import Mock as MagicMock
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+            return Mock()
+
+MOCK_MODULES = ['_FFPopSim']
+sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+
+import _FFPopSim
 del version_info
 try:
     _swig_property = property
