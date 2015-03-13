@@ -125,3 +125,4 @@ Release
 
 # Keep the docs for readthedocs (it has no SWIG)
 !pkg/python/FFPopSim.py
+!pkg/python/_FFPopSim.so
