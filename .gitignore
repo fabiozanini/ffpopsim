@@ -28,10 +28,6 @@ tests/FFPopSim.py
 tests/FFPopSim.pyc
 tests/_FFPopSim.so
 
-# SWIG generated files (they are kept in the static-gsl branch)
-src/python/FFPopSim.py
-src/python/FFPopSim_wrap.cpp
-
 # Compiled Object files
 *.slo
 *.lo
@@ -119,10 +115,6 @@ Session.vim
 .pydevproject
 Debug
 Release
-
-# Keep the binaries for linux64 for readthedocs
-# (otherwise setup.py install tries to rebuild)
-!build/lib.linux-x86_64-2.7/*
 
 # Keep the docs for readthedocs (it has no SWIG)
 !pkg/python/FFPopSim.py
