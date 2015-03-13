@@ -50,6 +50,7 @@ else:
     from new import instancemethod as new_instancemethod
 
 # Import mock _FFPopSim for RTD
+import sys
 from mock import Mock as MagicMock
 class Mock(MagicMock):
     @classmethod
