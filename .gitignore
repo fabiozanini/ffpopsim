@@ -121,4 +121,7 @@ Debug
 Release
 
 # Do not keep the binaries
-# (they are kept in the static_gsl branch)
+# (they are kept in the static branch)
+
+# Keep the docs for readthedocs (it has no SWIG)
+!pkg/python/FFPopSim.py
