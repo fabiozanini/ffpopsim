@@ -9,7 +9,7 @@ pkg/python/*
 pkg/include/*
 pkg/lib/*
 pkg/doc/*
-build/
+build/temp*
 
 # Documentation
 doc/latex/*
@@ -120,8 +120,9 @@ Session.vim
 Debug
 Release
 
-# Do not keep the binaries
-# (they are kept in the static branch)
+# Keep the binaries for linux64 for readthedocs
+# (otherwise setup.py install tries to rebuild)
+!build/lib.linux-x86_64-2.7/*
 
 # Keep the docs for readthedocs (it has no SWIG)
 !pkg/python/FFPopSim.py
