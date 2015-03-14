@@ -479,8 +479,8 @@ landscape.
 %}
 
 %ignore set_mutation_rates;
-int _set_mutation_rates(double *IN_ARRAY2, int DIM1, int DIM2) {
-        double ** mrs = new double*[2];
+int _set_mutation_rates(double* IN_ARRAY2, int DIM1, int DIM2) {
+        double** mrs = new double*[2];
         for(size_t i = 0; i < 2; i++)
                 mrs[i] = &(IN_ARRAY2[DIM2 * i]);
         int result = $self->set_mutation_rates(mrs);

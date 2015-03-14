@@ -788,20 +788,38 @@ use the bottleneck function.
 
 /* mutation rate */
 %rename(_get_mutation_rate) get_mutation_rate;
-%rename(_set_mutation_rate) set_mutation_rate;
+%ignore set_mutation_rate;
+void _set_mutation_rate_global(double m) {
+        $self->set_mutation_rate(m);
+}
+void _set_mutation_rate_site(double* IN_ARRAY1, int DIM1) {
+        $self->set_mutation_rate(IN_ARRAY1);
+}
+void _get_mutation_rate_site(int DIM1, double* ARGOUT_ARRAY1) {
+        for(size_t i=0; i < (size_t)DIM1; i++)
+                ARGOUT_ARRAY1[i] = $self->get_mutation_rate(i);
+}
 %pythoncode
 %{
 @property
 def mutation_rate(self):
    '''mutation rate (per site per generation)'''
-   return self._get_mutation_rate()
+   if self.mutation_model == 1:
+       return self._get_mutation_rate()
+   else:
+       return self._get_mutation_rate_site(self.L)
 
 @mutation_rate.setter
 def mutation_rate(self, m):
+    import numpy as np
     if self.all_polymorphic:
         raise ValueError("You cannot set all_polymorphic and a nonzero mutation rate.")
+    elif np.isscalar(m):
+        self._set_mutation_rate_global(m)
+    elif len(m) != self.L:
+        raise ValueError("The length of the mutation rate array must be equal to the numer of loci")
     else:
-        self._set_mutation_rate(m)
+        self._set_mutation_rate_site(m)
 %}
 
 /* do not expose the population, but rather only nonempty clones */
