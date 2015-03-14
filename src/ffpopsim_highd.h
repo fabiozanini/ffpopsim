@@ -405,10 +405,11 @@ public:
 	double growth_rate;			//growth rate for bottlenecks and the like
 
         // mutation rate (only if not all_polymorphic)
+	int mutation_model;			// model of mutation to be used
         double get_mutation_rate(){return mutation_rate;}
+        double* get_mutation_rates(){return mutation_rates;}
         void set_mutation_rate(double m);
         void set_mutation_rate(double* m);
-	int mutation_model;			// model of mutation to be used
 
         // pseudo-infinite site model
         bool is_all_polymorphic(){return all_polymorphic;}
