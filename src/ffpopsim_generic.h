@@ -45,9 +45,15 @@
 #define MAX(a,b) (a>b)?a:b
 #define RNG gsl_rng_taus2		//choose the random number generator algorithm, see http://www.gnu.org/software/gsl/manual/html_node/Random-number-generator-algorithms.html
 
+// recombination models
 #define FREE_RECOMBINATION 1
 #define CROSSOVERS 2
 #define SINGLE_CROSSOVER 3
+
+// mutation models
+#define MU_GLOBAL 1
+#define MU_SITE 2
+//FIXME: add another one for site AND direction specific mutations
 
 using namespace std;
 

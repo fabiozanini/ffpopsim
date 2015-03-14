@@ -97,6 +97,27 @@ int pop_initialize() {
 	return 0;	
 }
 
+/* Test site-specific mutation */
+int pop_mu_site() {
+	int L = 1000;
+	int N = 100;
+
+	haploid_highd pop(L);
+
+	// Choose mutation rates
+	double* mus = new double[L];
+	for (int i = 0; i < L; i++) mus[i] = 1e-5 * (i % 10);
+
+	pop.set_mutation_rate(mus);
+	pop.set_wildtype(N);		// start with a population of the right size
+
+	pop.evolve();
+
+	return 0;
+}
+
+
+
 /* Test evolution */
 int pop_evolve() {
 	int L = 1000;
@@ -355,7 +376,8 @@ int main(int argc, char **argv){
 //		status += hc_initialize();
 //		status += hc_setting();
 //		status += pop_initialize();
-		status += pop_evolve();
+		status += pop_mu_site();
+//		status += pop_evolve();
 //		status += pop_sampling();
 //		status += pop_Hamming();
 //		status += pop_divdiv();

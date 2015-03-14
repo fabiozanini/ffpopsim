@@ -70,6 +70,7 @@ haploid_highd::haploid_highd(int L_in, int rng_seed, int n_o_traits, bool all_po
 	circular = false;
 	carrying_capacity = 0;
 	mutation_rate = 0;
+	mutation_model = MU_GLOBAL;
 	outcrossing_rate = 0;
 	crossover_rate = 0;
 	recombination_model = CROSSOVERS;
@@ -138,6 +139,10 @@ int haploid_highd::allocate_mem() {
 	for (int i = 0; i < number_of_loci; i++) genome[i] = i;
 	crossovers= new int [number_of_loci];					// aux array holding crossover points
 	rec_pattern.resize(number_of_loci, 0);
+
+	if (HP_VERBOSE) cerr <<"mutation rates...";
+	mutation_rates = new double [number_of_loci];				// site-specific mutation rates
+	for (int i = 0; i < number_of_loci; i++) mutation_rates[i] = 0;
 
 	if (HP_VERBOSE) cerr <<"allele frequencies...";
 	allele_frequencies = new double [number_of_loci];
@@ -409,9 +414,44 @@ int haploid_highd::set_wildtype(unsigned long N_in) {
 
 /**
 
+ * @brief Set a global mutation rate
+ *
+ * @params rate to be set per site and generation
+ */
+void haploid_highd::set_mutation_rate(double m) {
+	if(all_polymorphic){
+                if(HP_VERBOSE) cerr<<"Cannot set the mutation rate with all_polymorphic."<<endl;
+                throw HP_BADARG;
+        } else {
+		mutation_model = MU_GLOBAL;
+		mutation_rate=m;
+	}
+}
+
+
+/**
+ * @brief Set site-specific mutation rates
+ *
+ * @params rates to be set per site and generation
+ */
+void haploid_highd::set_mutation_rate(double* m) {
+	if(all_polymorphic){
+                if(HP_VERBOSE) cerr<<"Cannot set the mutation rate with all_polymorphic."<<endl;
+                throw HP_BADARG;
+        } else {
+		mutation_model = MU_SITE;
+		for (int i = 0; i < number_of_loci; i++)
+			mutation_rates[i] = m[i];
+	}
+}
+
+
+
+/**
+
  * @brief Designates as set of loci to have their genealogy tracked
  *
- * @params locus to be tracked
+ * @params loci to be tracked
  */
 int haploid_highd::track_locus_genealogy(vector <int> loci) {
 	//Note: you must track genealogies BEFORE the population is set
@@ -717,46 +757,28 @@ int haploid_highd::bottleneck(int size_of_bottleneck) {
 int haploid_highd::mutate() {
 	if (HP_VERBOSE)	cerr <<"haploid_highd::mutate() ..."<<endl;
 
-	vector <int> mutations;
 	int tmp_individual=0, nmut=0;
 	size_t mutant;
 	allele_frequencies_up_to_date = false;
 	int actual_n_o_mutations,actual_n_o_mutants;
-	if (mutation_rate > HP_NOTHING and not all_polymorphic) {
-		//determine the number of individuals that are hit by at least one mutation
-		actual_n_o_mutants = gsl_ran_poisson(evo_generator, (1.0-exp(-mutation_rate*number_of_loci))*population_size);
-		produce_random_sample(min(actual_n_o_mutants, population_size));
 
-		//make sure enough empty clones are available to accomodate the new mutants
-		provide_at_least(min(actual_n_o_mutants, population_size));
-
-		//loop over the mutant individuals and introduce the mutations
-		for (int individual = 0; individual != actual_n_o_mutants; individual++) {
-			//determine the target clone
-			mutant = random_clone();
-			//determine the number of mutation it suffers. this should be Poisson conditional on having at least one
-			//in practice the solution is fine but it is somewhat inaccurate for multiple mutations
-			actual_n_o_mutations = gsl_ran_poisson(evo_generator, number_of_loci * mutation_rate)+1;
-			//introduce the mutations, not that flip_single_locus returns the number of new mutant, which is fed back into
-			//flip_single_locus to introduce the next mutation
-			for (int i = 0; i != actual_n_o_mutations; i++)
-				mutant=flip_single_locus(mutant, gsl_rng_uniform_int(evo_generator,number_of_loci));
-		}
-	} else if(all_polymorphic) {
+	// 3 possibilities: 1. keep all loci polymorphic; 2. global mu rate; 3. site-specific rate
+	// 1. all polymorphic
+	if(all_polymorphic) {
 		if(HP_VERBOSE) cerr <<"haploid_highd::mutate(): keeping all loci polymorphic"<<endl;
 		calc_allele_freqs(); //calculate the allele frequencies
 		nmut=0;
 		for (int locus=0; locus<L(); locus++){	//loop over all loci
 			if (fabs(2*allele_frequencies[locus]-1)>1-HP_NOTHING){	//spot fixed loci
 				if ((ancestral_state[locus]==0 and (2*allele_frequencies[locus]-1)<0) or
-                    (ancestral_state[locus]==1 and (2*allele_frequencies[locus]-1)>0))                
-                {	//if they are in the ancestral state
+        	    (ancestral_state[locus]==1 and (2*allele_frequencies[locus]-1)>0))                
+        	{	//if they are in the ancestral state
 					tmp_individual = flip_single_locus(locus);		//introduce new allele
 					polymorphism[locus].birth = get_generation();
 					polymorphism[locus].fitness = population[tmp_individual].fitness-fitness_stat.mean;
 					polymorphism[locus].fitness_variance = fitness_stat.variance;
 					nmut++;
-				}else{	//if locus is in derived state, flip coefficient of trait zero
+				} else {	//if locus is in derived state, flip coefficient of trait zero
 					trait[0].set_additive_coefficient(-trait[0].get_additive_coefficient(locus),locus,locus);
 					fixed_mutations.push_back(polymorphism[locus]);
 					fixed_mutations.back().sweep_time = get_generation() -fixed_mutations.back().birth;
@@ -773,7 +795,62 @@ int haploid_highd::mutate() {
 		number_of_mutations.push_back(nmut);
 		calc_stat();
 
-	} else if(HP_VERBOSE) cerr <<"haploid_highd::mutate(): mutation rate is zero."<<endl;
+	// 2. global rate
+	} else if (mutation_model == MU_GLOBAL) {
+		if(HP_VERBOSE) cerr <<"haploid_highd::mutate(): global mutation rate."<<endl;
+		if (mutation_rate > HP_NOTHING) {
+			//determine the number of individuals that are hit by at least one mutation
+			actual_n_o_mutants = gsl_ran_poisson(evo_generator, (1.0-exp(-mutation_rate*number_of_loci))*population_size);
+			produce_random_sample(min(actual_n_o_mutants, population_size));
+
+			//make sure enough empty clones are available to accomodate the new mutants
+			provide_at_least(min(actual_n_o_mutants, population_size));
+
+			//loop over the mutant individuals and introduce the mutations
+			for (int individual = 0; individual != actual_n_o_mutants; individual++) {
+				//determine the target clone
+				mutant = random_clone();
+				//determine the number of mutation it suffers. this should be Poisson conditional on having at least one
+				//in practice the solution is fine but it is somewhat inaccurate for multiple mutations
+				actual_n_o_mutations = gsl_ran_poisson(evo_generator, number_of_loci * mutation_rate)+1;
+				//introduce the mutations, not that flip_single_locus returns the number of new mutant, which is fed back into
+				// flip_single_locus chosen at random to introduce the next mutation
+				for (int i = 0; i != actual_n_o_mutations; i++)
+					mutant = flip_single_locus(mutant, gsl_rng_uniform_int(evo_generator,number_of_loci));
+			}
+		} else if(HP_VERBOSE) cerr <<"haploid_highd::mutate(): mutation rate is zero."<<endl;
+
+	// 3. site-specific rates
+	// NOTE: see the global version here above for details of the algorithm
+	} else {
+		if(HP_VERBOSE) cerr <<"haploid_highd::mutate(): site-specific mutation rates."<<endl;	
+
+		double mu_loc;
+		int actual_n_o_mutants_tmp;
+		int* actual_n_o_mutants_vec = new int[L()];
+
+		// loop over loci to count the max number of mutants (if all muts fall on a different one)
+		actual_n_o_mutants = 0;
+		for(int locus=0; locus<L(); locus++) {
+			mu_loc = mutation_rates[locus];
+			if (mu_loc > HP_NOTHING) {
+				actual_n_o_mutants_tmp = gsl_ran_poisson(evo_generator, (1.0-exp(-mu_loc*number_of_loci))*population_size);
+				actual_n_o_mutants_vec[locus] = actual_n_o_mutants_tmp;
+				actual_n_o_mutants += actual_n_o_mutants_tmp;
+			} else actual_n_o_mutants_vec[locus] = 0;
+		}
+		
+		// provide random clones for the mutations
+		produce_random_sample(min(actual_n_o_mutants, population_size));
+		provide_at_least(min(actual_n_o_mutants, population_size));
+
+		// reiterate and apply the mutations
+		for(int locus=0; locus<L(); locus++)
+			for (int individual = 0; individual != actual_n_o_mutants_vec[locus]; individual++) {
+				mutant = random_clone();
+				mutant = flip_single_locus(mutant, locus);
+			}
+	}
 
 	if (HP_VERBOSE)	cerr <<"done."<<endl;;
 	return 0;

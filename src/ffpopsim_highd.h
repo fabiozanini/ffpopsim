@@ -139,7 +139,7 @@ public:
 
 
 // Control constants
-#define HP_VERBOSE 0
+#define HP_VERBOSE 1
 #define NO_GENOTYPE -1
 #define HP_MINAF 0.02
 #define MAX_DELTAFITNESS 8
@@ -406,11 +406,9 @@ public:
 
         // mutation rate (only if not all_polymorphic)
         double get_mutation_rate(){return mutation_rate;}
-        void set_mutation_rate(double m){
-        if(all_polymorphic){
-                if(HP_VERBOSE) cerr<<"Cannot set the mutation rate with all_polymorphic."<<endl;
-                throw HP_BADARG;
-        } else mutation_rate=m;}
+        void set_mutation_rate(double m);
+        void set_mutation_rate(double* m);
+	int mutation_model;			// model of mutation to be used
 
         // pseudo-infinite site model
         bool is_all_polymorphic(){return all_polymorphic;}
@@ -531,7 +529,6 @@ protected:
 	int number_of_traits;
 	int generation;
 	int number_of_clones;
-	double mutation_rate;			// rate of mutation per locus per generation
 
 	// evolution
 	int mutate();
@@ -561,6 +558,10 @@ protected:
 	vector <poly_t> fixed_mutations;	//vector to store all fixed mutations
 	vector <int> number_of_mutations;	//vector to store the number of mutations introduced each generation
 	void calc_allele_freqs();
+
+	// mutation details
+	double mutation_rate;			// rate of mutation per locus per generation
+	double* mutation_rates;			// the mutation rate can be made locus specific
 
 	// recombination details
 	double outcrossing_rate_effective;
