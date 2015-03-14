@@ -406,8 +406,10 @@ public:
 
         // mutation rate (only if not all_polymorphic)
 	int mutation_model;			// model of mutation to be used
-        double get_mutation_rate(){return mutation_rate;}
-        double* get_mutation_rates(){return mutation_rates;}
+        double get_mutation_rate(int locus=0){
+		if(mutation_model == MU_GLOBAL) return mutation_rate;
+		else return mutation_rates[locus];
+	}
         void set_mutation_rate(double m);
         void set_mutation_rate(double* m);
 
