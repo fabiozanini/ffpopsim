@@ -1527,6 +1527,12 @@ def get_trait_additive(self, t=0):
         raise ValueError("There are only "+str(self.number_of_traits)+" traits.")
 
     return self._get_trait_additive(self.L, t=t)
+
+
+def get_fitness_additive(self):
+    '''Shortcut for get_trait_additive when there is only one trait'''
+    return self._get_trait_additive(self.L, t=0)
+
 %}
 
 
