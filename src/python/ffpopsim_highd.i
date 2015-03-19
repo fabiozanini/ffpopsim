@@ -897,24 +897,6 @@ def number_of_mutations(self):
 %}
 
 /* trait weights */
-%ignore set_trait_weights;
-%pythonprepend _set_trait_weights {
-if len(args) and (len(args[0]) != self.number_of_traits):
-    raise ValueError('The weights must be a sequence of length equal to the number of traits.')
-}
-void _set_trait_weights(double* IN_ARRAY1, int DIM1) {
-        /* call the C++ method */
-        $self->set_trait_weights(IN_ARRAY1);
-        $self->update_fitness();
-}
-%feature("autodoc",
-"weight of each trait on fitness
-
-.. note:: Fitness is updated automatically when the weights are changed.
-") _get_trait_weights;
-%pythonprepend _get_trait_weights {
-args = tuple(list(args) + [self.number_of_traits])
-}
 void _get_trait_weights(double* ARGOUT_ARRAY1, int DIM1) {
         /* check trait number */
         if(DIM1 != $self->get_number_of_traits())
@@ -924,9 +906,31 @@ void _get_trait_weights(double* ARGOUT_ARRAY1, int DIM1) {
         for(size_t t=0; t < (size_t)DIM1; t++)
                 ARGOUT_ARRAY1[t] = $self->get_trait_weight(t);
 }
+
+%ignore set_trait_weights;
+void _set_trait_weights(double* IN_ARRAY1, int DIM1) {
+        /* call the C++ method */
+        $self->set_trait_weights(IN_ARRAY1);
+        $self->update_fitness();
+}
+
 %pythoncode
 %{
-trait_weights = property(_get_trait_weights, _set_trait_weights)
+@property
+def trait_weights(self):
+    '''weight of each trait on fitness
+    
+    .. note:: Fitness is updated automatically when the weights are changed.
+    '''
+    return self._get_trait_weights(self.number_of_traits)
+
+
+@trait_weights.setter
+def trait_weights(self, value):
+    if len(value) != self.number_of_traits:
+        raise ValueError('The weights must be a sequence of length equal to the number of traits.')
+    self._set_trait_weights(value)
+
 %}
 
 /* dump to file */
@@ -1093,7 +1097,7 @@ Parameters:
      capacity to this value
 ") set_allele_frequencies;
 %pythonprepend set_allele_frequencies {
-if len(args) and (len(args[0]) != self.L):
+if len(frequencies) != self.L:
     raise ValueError('Please input an L dimensional list of allele frequencies.')
 }
 %exception set_allele_frequencies {
@@ -1110,44 +1114,8 @@ return None
 
 /* set genotypes */
 %ignore set_genotypes(vector <genotype_value_pair_t> gt);
-%feature("autodoc",
-"Initialize population with fixed counts for specific genotypes.
-
-Parameters:
-   - genotypes: list of genotypes to set. Genotypes are lists of alleles,
-     e.g. [[0,0,1,0], [0,1,1,1]] for genotypes 0010 and 0111   
-   - counts: list of the number at which each of those genotypes it to be present
-
-.. note:: the population size and, if unset, the carrying capacity will be set
-          as the sum of the counts.
-
-**Example**: if you want to initialize 200 individuals with genotype 001 and
-             300 individuals with genotype 110, you can use
-             ``set_genotypes([[0,0,1], [1,1,0]], [200, 300])``
-") set_genotypes;
-%pythonprepend set_genotypes {
-if len(args) and (len(args) >= 2):
-    genotypes = args[0]
-    counts = args[1]
-    genotypes = _np.array(genotypes, float, copy=False, ndmin=2)
-    counts = _np.asarray(counts, float)
-    if len(genotypes) != len(counts):
-        raise ValueError('Genotypes and counts must have the same length')
-    args = tuple([genotypes.ravel(), counts] + list(args[2:]))
-}
-%exception set_genotypes {
-  $action
-  if (result) {
-     PyErr_SetString(PyExc_RuntimeError,"Error in the C++ function.");
-     SWIG_fail;
-  }
-}
-%pythonappend set_genotypes {
-self._nonempty_clones = _np.array(self._get_nonempty_clones())
-return None
-}
 %apply (int DIM1, double* IN_ARRAY1) {(int len1, double* genotypes), (int len2, double* counts)};
-int set_genotypes(int len1, double* genotypes, int len2, double* counts) {
+int _set_genotypes(int len1, double* genotypes, int len2, double* counts) {
         /* We use a flattened array */
         len1 /= len2;
         vector<genotype_value_pair_t> gt;
@@ -1163,52 +1131,45 @@ int set_genotypes(int len1, double* genotypes, int len2, double* counts) {
 }
 %clear (int len1, double* genotypes);
 %clear (int len2, double* counts);
-
-
-/* set genotypes with ancestral state*/
-%ignore set_genotypes_and_ancestral_state(vector <genotype_value_pair_t> gt, vector <int> anc_state);
-%feature("autodoc",
-"Initialize population with fixed counts for specific genotypes.
-
-Parameters:
-   - genotypes: list of genotypes to set. Genotypes are lists of alleles,
-     e.g. [[0,0,1,0], [0,1,1,1]] for genotypes 0010 and 0111   
-   - counts: list of the number at which each of those genotypes it to be present
-   - ancestral state of the sample, a vector of 0 and 1
-.. note:: the population size and, if unset, the carrying capacity will be set
-          as the sum of the counts.
-
-**Example**: if you want to initialize 200 individuals with genotype 001 and
-             300 individuals with genotype 110, you can use
-             ``set_genotypes([[0,0,1], [1,1,0]], [200, 300])``
-") set_genotypes_and_ancestral_state;
-%pythonprepend set_genotypes_and_ancestral_state {
-if len(args) and (len(args) >= 3):
-    genotypes = args[0]
-    counts = args[1]
-    anc_state = args[2]
-    genotypes = _np.array(genotypes, float, copy=False, ndmin=2)
-    counts = _np.asarray(counts, float)
-    anc_state = _np.asarray(anc_state, float)
-    if len(genotypes) != len(counts):
-        raise ValueError('Genotypes and counts must have the same length')
-    if (len(anc_state) != self.L):
-        raise ValueError('Ancestral state vector must have length L')
-    args = tuple([genotypes.ravel(), counts] + list(args[2:]))
-}
-%exception set_genotypes_and_ancestral_state {
+%exception _set_genotypes {
   $action
   if (result) {
      PyErr_SetString(PyExc_RuntimeError,"Error in the C++ function.");
      SWIG_fail;
   }
 }
-%pythonappend set_genotypes_and_ancestral_state {
-self._nonempty_clones = _np.array(self._get_nonempty_clones())
-return None
-}
-%apply (int DIM1, double* IN_ARRAY1) {(int len1, double* genotypes), (int len2, double* counts), (int len3, double* anc_state)};
-int set_genotypes_and_ancestral_state(int len1, double* genotypes, int len2, double* counts, int len3, double* anc_state) {
+%pythoncode
+%{
+def set_genotypes(self, genotypes, counts):
+    '''Initialize population with fixed counts for specific genotypes.
+    
+    Parameters:
+       - genotypes: list of genotypes to set. Genotypes are lists of alleles,
+         e.g. [[0,0,1,0], [0,1,1,1]] for genotypes 0010 and 0111   
+       - counts: list of the number at which each of those genotypes it to be present
+    
+    .. note:: the population size and, if unset, the carrying capacity will be set
+              as the sum of the counts.
+    
+    **Example**: if you want to initialize 200 individuals with genotype 001 and
+                 300 individuals with genotype 110, you can use
+                 ``set_genotypes([[0,0,1], [1,1,0]], [200, 300])``
+    '''
+    genotypes = _np.array(genotypes, float, copy=False, ndmin=2)
+    counts = _np.asarray(counts, float)
+    if len(genotypes) != len(counts):
+        raise ValueError('Genotypes and counts must have the same length')
+
+    self._set_genotypes(genotypes.ravel(), counts)
+    self._nonempty_clones = _np.array(self._get_nonempty_clones())
+%}
+
+
+
+/* set genotypes with ancestral state*/
+%ignore set_genotypes_and_ancestral_state(vector <genotype_value_pair_t> gt, vector <int> anc_state);
+%apply (double* IN_ARRAY1, int DIM1) {(double* genotypes, int len1), (double* counts, int len2), (double* anc_state, int len3)};
+int _set_genotypes_and_ancestral_state(double* genotypes, int len1, double* counts, int len2, double *anc_state, int len3) {
         /* We use a flattened array */
         len1 /= len2;
         vector<genotype_value_pair_t> gt;
@@ -1229,6 +1190,43 @@ int set_genotypes_and_ancestral_state(int len1, double* genotypes, int len2, dou
 %clear (int len1, double* genotypes);
 %clear (int len2, double* counts);
 %clear (int len3, double* anc_state);
+%exception _set_genotypes_and_ancestral_state {
+  $action
+  if (result) {
+     PyErr_SetString(PyExc_RuntimeError,"Error in the C++ function.");
+     SWIG_fail;
+  }
+}
+%pythoncode
+%{
+def set_genotypes_and_ancestral_state(self, genotypes, counts, anc_state):
+    '''Initialize population with fixed counts for specific genotypes.
+    
+    Parameters:
+       - genotypes: list of genotypes to set. Genotypes are lists of alleles,
+         e.g. [[0,0,1,0], [0,1,1,1]] for genotypes 0010 and 0111   
+       - counts: list of the number at which each of those genotypes it to be present
+       - ancestral state of the sample, a vector of 0 and 1
+    .. note:: the population size and, if unset, the carrying capacity will be set
+              as the sum of the counts.
+    
+    **Example**: if you want to initialize 200 individuals with genotype 001 and
+                 300 individuals with genotype 110, you can use
+                 ``set_genotypes([[0,0,1], [1,1,0]], [200, 300])``
+    '''
+    genotypes = _np.array(genotypes, float, copy=False, ndmin=2)
+    counts = _np.asarray(counts, float)
+    if len(genotypes) != len(counts):
+        raise ValueError('Genotypes and counts must have the same length')
+
+    anc_state = _np.asarray(anc_state, float)
+    if (len(anc_state) != self.L):
+        raise ValueError('Ancestral state vector must have length L')
+
+    self._set_genotypes_and_ancestral_state(genotypes.ravel(), counts, anc_state)
+    self._nonempty_clones = _np.array(self._get_nonempty_clones())
+
+%}
 
 
 /* evolve */
@@ -1362,14 +1360,17 @@ Returns:
 ") get_trait_covariance;
 
 /* get allele frequencies */
-%feature("autodoc", "Get all allele frequencies") get_allele_frequencies;
-%pythonprepend get_allele_frequencies {
-args = tuple(list(args) + [self.L])
-}
-void get_allele_frequencies(double* ARGOUT_ARRAY1, int DIM1) {
+void _get_allele_frequencies(int DIM1, double* ARGOUT_ARRAY1) {
         for(size_t i=0; i < (size_t)$self->get_number_of_loci(); i++)
                 ARGOUT_ARRAY1[i] = $self->get_allele_frequency(i);
 }
+%pythoncode
+%{
+def get_allele_frequencies(self):
+    '''Get allele frequencies'''
+    return self._get_allele_frequencies(self.L)
+
+%}
 
 %feature("autodoc",
 "Get the frequency of the + allele at the selected locus
@@ -1382,16 +1383,19 @@ Returns:
 ") get_allele_frequency;
 
 /* get allele frequencies */
-%feature("autodoc", "Get all derived allele frequencies") get_derived_allele_frequencies;
-%pythonprepend get_derived_allele_frequencies {
-args = tuple(list(args) + [self.L])
-}
-void get_derived_allele_frequencies(double* ARGOUT_ARRAY1, int DIM1) {
+void _get_derived_allele_frequencies( int DIM1, double* ARGOUT_ARRAY1) {
         if ($self->is_all_polymorphic()){
                 for(size_t i=0; i < (size_t)$self->get_number_of_loci(); i++)
                         ARGOUT_ARRAY1[i] = $self->get_derived_allele_frequency(i);
     }
 }
+%pythoncode
+%{
+def get_derived_allele_frequencies(self):
+    '''Get derived allele frequencies'''
+    return self._get_derived_allele_frequencies(self.L)
+
+%}
 
 
 %feature("autodoc",
@@ -1405,14 +1409,17 @@ Returns:
 ") get_derived_allele_frequency;
 
 /* get ancestral state of all loci */
-%feature("autodoc", "Get ancestral state of all loci") get_ancestral_states;
-%pythonprepend get_ancestral_states {
-args = tuple(list(args) + [self.L])
-}
-void get_ancestral_states(double* ARGOUT_ARRAY1, int DIM1) {
+void _get_ancestral_states(int DIM1, double* ARGOUT_ARRAY1) {
   for(size_t i=0; i < (size_t)$self->get_number_of_loci(); i++)
-	ARGOUT_ARRAY1[i] = $self->get_ancestral_state(i);
+       ARGOUT_ARRAY1[i] = $self->get_ancestral_state(i);
 }
+%pythoncode
+%{
+def get_ancestral_states(self):
+    '''Get ancestral state of all loci'''
+    return self._get_ancestral_states(self.L)
+
+%}
 
 
 %feature("autodoc",
@@ -1492,21 +1499,7 @@ Parameters:
 }
 
 /* get single locus effects */
-%feature("autodoc",
-"Get an array with the additive coefficients of all loci of a trait. 
-
-Parameters:
-   - t: number of the trait
-
-Returns:
-   - coefficients: array of additive coefficients for the selected trait
-") get_trait_additive;
-%pythonprepend get_trait_additive {
-if (len(args) > 1) and (args[1] >= self.number_of_traits):
-    raise ValueError("There are only "+str(self.number_of_traits)+" traits.")
-args = tuple([self.L] + list(args))
-}
-void get_trait_additive(double* ARGOUT_ARRAY1, int DIM1, int t=0) {
+void _get_trait_additive(int DIM1, double* ARGOUT_ARRAY1, int t=0) {
         /* Initialize to zero */
         for(size_t i=0; i < (size_t)DIM1; i++)
                 ARGOUT_ARRAY1[i] = 0;
@@ -1519,6 +1512,23 @@ void get_trait_additive(double* ARGOUT_ARRAY1, int DIM1, int t=0) {
                 ARGOUT_ARRAY1[coeff->locus] += coeff->value;
         }
 }
+%pythoncode
+%{
+def get_trait_additive(self, t=0):
+    '''Get an array with the additive coefficients of all loci of a trait. 
+
+    Parameters:
+       - t: number of the trait
+    
+    Returns:
+       - coefficients: array of additive coefficients for the selected trait
+    '''
+    if t >= self.number_of_traits:
+        raise ValueError("There are only "+str(self.number_of_traits)+" traits.")
+
+    return self._get_trait_additive(self.L, t=t)
+%}
+
 
 /* update functions we need in hivpopulation */
 %rename (_update_traits) update_traits;
@@ -1543,20 +1553,7 @@ Parameters:
 %feature("autodoc", "Clear all trait landscapes") clear_traits;
 
 /* set single locus effects */
-%feature("autodoc",
-"Set the additive part of a trait
-
-Parameters:
-   - coefficients: array of coefficients for the trait (of length L). All previous additive coefficents are erased
-   - t: number of the trait to set
-") set_trait_additive;
-%pythonprepend set_trait_additive {
-if (len(args) > 1) and (args[1] >= self.number_of_traits):
-    raise ValueError("There are only "+str(self.number_of_traits)+" traits.")
-if len(args) and (len(args[0]) != self.L):
-    raise ValueError("L coefficients expected.")
-}
-void set_trait_additive(int DIM1, double* IN_ARRAY1, int t=0) {
+void _set_trait_additive(double* IN_ARRAY1, int DIM1, int t=0) {
         /* reset trait landscape */
         $self->trait[t].reset_additive();
         
@@ -1573,29 +1570,29 @@ void set_trait_additive(int DIM1, double* IN_ARRAY1, int t=0) {
         $self->update_traits();
         $self->update_fitness();
 }
+%pythoncode
+%{
+def set_trait_additive(self, coefficients, t=0):
+    '''Set the additive part of a trait
+    
+    Parameters:
+       - coefficients: array of coefficients for the trait (of length L). All previous additive coefficents are erased
+       - t: number of the trait to set
+    '''
+    if t >= self.number_of_traits:
+        raise ValueError("There are only "+str(self.number_of_traits)+" traits.")
+    if len(coefficients) != self.L:
+        raise ValueError("L coefficients expected.")
+    self._set_trait_additive(coefficients, t=t)
 
-%feature("autodoc", "Shortcut for set_trait_additive when there is only one trait") set_fitness_additive;
-%pythonprepend set_fitness_additive {
-if len(args) and (len(args[0]) != self.L):
-    raise ValueError("L coefficients expected.")
-}
-void set_fitness_additive(int DIM1, double *IN_ARRAY1) {
-        /* reset trait landscape */
-        $self->trait[0].reset_additive();
-        
-        /* set the new coefficients */
-        vector <int> loci(1,0);
-        for(size_t i = 0; i < (size_t)DIM1; i++) {
-                if(abs(IN_ARRAY1[i]) > HP_NOTHING) {
-                        loci[0] = i;
-                        $self->add_trait_coefficient(IN_ARRAY1[i], loci, 0);
-                }
-        }
 
-        /* update the population */
-        $self->update_traits();
-        $self->update_fitness();
-}
+def set_fitness_additive(self, coefficients):
+    '''Shortcut for set_trait_additive when there is only one trait'''
+    if len(coefficients) != self.L:
+        raise ValueError("L coefficients expected.")
+    self._set_trait_additive(coefficients, t=0)
+%}
+
 
 %feature("autodoc",
 "Add a coefficient to the trait landscape.
@@ -1642,12 +1639,10 @@ Parameters:
 
 /* fitness of clones */
 %pythonprepend get_fitness {
-if len(args) and (args[0] >= self.number_of_clones):
+if n >= self.number_of_clones:
     raise ValueError('The population has only '+str(self.number_of_clones)+' clones.')
-if len(args):
-    args = list(args)
-    args[0] = self._nonempty_clones[args[0]]
-    args = tuple(args)
+
+n = self._nonempty_clones[n]
 }
 %feature("autodoc",
 "Get the fitness of an individual
@@ -1671,14 +1666,12 @@ def get_fitnesses(self):
 
 /* traits of clones */
 %pythonprepend get_trait {
-if (len(args) > 1) and (args[1] >= self.number_of_traits):
+if t >= self.number_of_traits:
     raise ValueError("There are only "+str(self.number_of_traits)+" traits.")
-if len(args) and (args[0] >= self.number_of_clones):
+if n >= self.number_of_clones:
     raise ValueError('The population has only '+str(self.number_of_clones)+' clones.')
-if len(args):
-    args = list(args)
-    args[0] = self._nonempty_clones[args[0]]
-    args = tuple(args)
+
+n = self._nonempty_clones[n]
 }
 %feature("autodoc",
 "Get a trait of an individual
@@ -1704,12 +1697,10 @@ def get_traits(self):
 
 /* get clone sizes */
 %pythonprepend get_clone_size {
-if len(args) and (args[0] >= self.number_of_clones):
+if n >= self.number_of_clones:
     raise ValueError('The population has only '+str(self.number_of_clones)+' clones.')
-if len(args):
-    args = list(args)
-    args[0] = self._nonempty_clones[args[0]]
-    args = tuple(args)
+
+n = self._nonempty_clones[n]
 }
 %feature("autodoc", 
 "Get the size of a clone
@@ -1732,26 +1723,25 @@ def get_clone_sizes(self):
 %}
 
 /* get genotypes */
-%pythonprepend get_genotype {
-if len(args) and (args[0] >= self.number_of_clones):
-    raise ValueError('The population has only '+str(self.number_of_clones)+' clones.')
-if len(args):
-    args = list(args)
-    args[0] = self._nonempty_clones[args[0]]
-    args = tuple(args)
-}
-boost::dynamic_bitset<> get_genotype(int n) {
+boost::dynamic_bitset<> _get_genotype(int n) {
         return $self->population[n].genotype;
 }
-%feature("autodoc",
-"Get a genotype from the population
-
-Parameters:
-   - n: index of the clone whose genotype is to be returned
-
-Returns:
-   - genotype: Boolean array of the genotype
-") get_genotype;
+%pythoncode
+%{
+def get_genotype(self, n):
+    '''Get a genotype from the population
+    
+    Parameters:
+       - n: index of the clone whose genotype is to be returned
+    
+    Returns:
+       - genotype: Boolean array of the genotype
+    '''
+    if n >= self.number_of_clones:
+        raise ValueError('The population has only '+str(self.number_of_clones)+' clones.')
+    n = self._nonempty_clones[n]
+    return self._get_genotype(n)
+%}
 
 %pythoncode
 %{

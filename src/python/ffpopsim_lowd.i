@@ -275,7 +275,7 @@ Parameters:
           no effect on the speed of the simulation.
 ") set_allele_frequencies;
 %pythonprepend set_allele_frequencies {
-if len(args) and (len(args[0]) != self.L):
+if len(frequencies) != self.L:
     raise ValueError('The input array of allele frequencies has the wrong length.')
 }
 %exception set_allele_frequencies {
@@ -350,7 +350,7 @@ return None
 "Get the recombination rate between the specified locus and the following one.
 ") get_recombination_rate;
 %pythonprepend get_recombination_rate {
-if len(args) and (args[0] >= self.L - 1):
+if (locus < 0) or (locus >= self.L - 1):
     raise ValueError("Expecting a locus from 0 to L - 2.")
 }
 
@@ -585,7 +585,7 @@ Returns:
     - the frequency of the genotype
 ") get_genotype_frequency;
 %pythonprepend get_genotype_frequency {
-if len(args) and (args[0] >= (1<<self.L)):
+if genotype >= (1<<self.L):
     raise ValueError("Expecting an individual from 0 to 2^L - 1.")
 }
 
@@ -607,7 +607,7 @@ Returns:
     - the frequency of the + allele, :math:`\\nu_i := \\frac{1 + \\left<s_i\\right>}{2}`, where :math:`s_i \in \{-1, 1\}`.
 ") get_allele_frequency;
 %pythonprepend get_allele_frequency {
-if len(args) and (args[0] >= (self.L)):
+if locus >= (self.L):
     raise ValueError("Expecting a locus from 0 to L - 1.")
 }
 
@@ -629,7 +629,7 @@ Returns:
     - the joint frequency of the + alleles
 ") get_pair_frequency;
 %pythonprepend get_pair_frequency {
-if (len(args) >= 2) and ((args[0] >= (self.L)) or (args[1] >= (self.L))):
+if (locus1 >= self.L) or (locus2 >= self.L):
     raise ValueError("Expecting loci from 0 to L - 1.")
 }
 
@@ -643,7 +643,7 @@ Returns:
     - the chi of that allele, :math:`\\chi_i := \\left<s_i\\right>`, where :math:`s_i \in \{-1, 1\}`.
 ") get_chi;
 %pythonprepend get_chi {
-if len(args) and (args[0] >= (self.L)):
+if locus >= self.L:
     raise ValueError("Expecting a locus from 0 to L - 1.")
 }
 
@@ -658,7 +658,7 @@ Returns:
     - the linkage disequilibiurm between them, i.e. :math:`\\chi_{ij} := \\left<s_i s_j\\right> - \\chi_i \\cdot \\chi_j`.
 ") get_chi2;
 %pythonprepend get_chi2 {
-if (len(args) >= 2) and ((args[0] >= (self.L)) or (args[1] >= (self.L))):
+if (locus1 >= self.L) or (locus2 >= self.L):
     raise ValueError("Expecting loci from 0 to L - 1.")
 }
 
@@ -673,7 +673,7 @@ Returns:
     - the linkage disequilibiurm between them, i.e. :math:`D_{ij} := 1 / 4 \\left[\\left<s_i s_j\\right> - \\chi_i \\cdot \\chi_j\\right]`.
 ") get_LD;
 %pythonprepend get_LD {
-if (len(args) >= 2) and ((args[0] >= (self.L)) or (args[1] >= (self.L))):
+if (locus1 >= self.L) or (locus2 >= self.L):
     raise ValueError("Expecting loci from 0 to L - 1.")
 }
 
@@ -688,7 +688,7 @@ Returns:
     - the second moment, i.e. :math:`\\left<s_i s_j\\right>`, where :math:`s_i, s_j \in \{-1, 1\}`.
 ") get_moment;
 %pythonprepend get_moment {
-if (len(args) >= 2) and ((args[0] >= (self.L)) or (args[1] >= (self.L))):
+if (locus1 >= self.L) or (locus2 >= self.L):
     raise ValueError("Expecting loci from 0 to L - 1.")
 }
 
@@ -723,25 +723,27 @@ Returns:
     - the fitness of that genotype.
 ") get_fitness;
 %pythonprepend get_fitness {
-if len(args) and (args[0] >= (1<<self.L)):
+if genotype >= (1<<self.L):
     raise ValueError("Expecting an individual between 0 and 2^L - 1.")
 }
 
-%feature("autodoc", "Get the fitness of all possible genotypes.") get_fitnesses;
-%pythonprepend get_fitnesses {
-args = tuple([1<<self.L] + list(args))
-}
-void get_fitnesses(int DIM1, double* ARGOUT_ARRAY1) {
+void _get_fitnesses(int DIM1, double* ARGOUT_ARRAY1) {
         for(size_t i=0; i < (size_t)DIM1; i++)
                 ARGOUT_ARRAY1[i] = $self->get_fitness(i);
 }
+%pythoncode
+%{
+def get_fitnesses(self):
+    '''Get the fitness of all possible genotypes.'''
+    return self._get_fitnesses(self.L)
+%}
 
 /* get fitness coefficients (Fourier space) */
 %feature("autodoc",
 "Get fitness coefficient of a combination (bitset) of loci
 
 Parameters:
-    - loci_bitset: Bitset of loci interested by the coefficient (see below). This can either be an integer or in binary format, e.g. 5 = 0b101 
+    - bitset_loci: Bitset of loci interested by the coefficient (see below). This can either be an integer or in binary format, e.g. 5 = 0b101 
 
 .. note:: Examples for loci_bitset:
    - 0: fitness baseline for the population
@@ -754,38 +756,38 @@ Returns:
     - the fitness coefficient of that combination of loci.
 ") get_fitness_coefficient;
 %pythonprepend get_fitness_coefficient {
-if len(args) and (args[0] >= (1<<self.L)):
+if bitset_loci >= (1<<self.L):
     raise ValueError("Expecting an individual between 0 and 2^L - 1.")
 }
 
-%feature("autodoc",
-"Get all fitness coefficients.
-
-The order of the coefficient is by bitset of interested loci:
-- the population baseline is at position 0
-- the additive term of locus X is at position (1 << X), i.e. 2^X
-- the 2-locus epistatic term between loci X and Y is at (1 << X) + (1 << Y), i.e. 2^X + 2^Y
-and so on.
-
-For instance, the following indices contain:
-0 aka 0b0: baseline for the population
-1 aka 0b1: additive coefficient for the first locus
-2 aka 0b10: additive coefficient for the second locus
-3 aka 0b11: epistatic coefficient bewteen locus one and two
-4 aka 0b100: additive coefficient for the third locus
-5 aka 0b101: epistatic coefficient between locus one and three
-6 aka 0b110: epistatic coefficient between locus two and three
-7 aka 0b111: epistatic coefficient among loci one, two, and three (3-locus term)
-and so on.
-") get_fitness_coefficients;
-%pythonprepend get_fitness_coefficients {
-args = tuple([1<<self.L] + list(args))
-}
-void get_fitness_coefficients(int DIM1, double* ARGOUT_ARRAY1) {
+void _get_fitness_coefficients(int DIM1, double* ARGOUT_ARRAY1) {
         for(size_t i=0; i < (size_t)DIM1; i++)
                 ARGOUT_ARRAY1[i] = $self->get_fitness_coefficient(i);
 }
-
+%pythoncode
+%{
+def get_fitness_coefficients(self):
+    '''Get all fitness coefficients.
+    
+    The order of the coefficient is by bitset of interested loci:
+    - the population baseline is at position 0
+    - the additive term of locus X is at position (1 << X), i.e. 2^X
+    - the 2-locus epistatic term between loci X and Y is at (1 << X) + (1 << Y), i.e. 2^X + 2^Y
+    and so on.
+    
+    For instance, the following indices contain:
+    0 aka 0b0: baseline for the population
+    1 aka 0b1: additive coefficient for the first locus
+    2 aka 0b10: additive coefficient for the second locus
+    3 aka 0b11: epistatic coefficient bewteen locus one and two
+    4 aka 0b100: additive coefficient for the third locus
+    5 aka 0b101: epistatic coefficient between locus one and three
+    6 aka 0b110: epistatic coefficient between locus two and three
+    7 aka 0b111: epistatic coefficient among loci one, two, and three (3-locus term)
+    and so on.
+    '''
+    return self._get_fitness_coefficients(1<<self.L)
+%}
 
 /* divergence/diversity/fitness distributions and plot (full Python implementations) */
 %pythoncode
