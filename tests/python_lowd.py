@@ -5,6 +5,7 @@ date:       14/05/12
 content:    Test script for the python bindings to the low-dimensional
             simulation
 '''
+from __future__ import print_function, division
 
 # Import module
 import sys
@@ -26,15 +27,15 @@ pop.set_mutation_rates([0.003,0.002,0.004,0.005],
                        [0.006,0.004,0.008,0.010])
 
 # Test getting the mutation rate
-print pop.get_mutation_rates(direction=0)
-print pop.get_mutation_rates(direction=1)
+print(pop.get_mutation_rates(direction=0))
+print(pop.get_mutation_rates(direction=1))
 
 # Test setting / getting fitness
 pop.set_fitness_additive([0.02,0.03,0.04,0.01])
 pop.get_fitnesses()
 
 # Test allele frequency readout
-print pop.get_allele_frequencies()
+print(pop.get_allele_frequencies())
 
 # Test evolution
 gens = 100
@@ -42,14 +43,14 @@ from time import time as ti
 t0 = ti()
 pop.evolve(gens)
 t1 = ti()
-print 'Time for evolving the population for '+str(gens)+' generations: {:1.1f} s'.format(t1-t0)
+print('Time for evolving the population for '+str(gens)+' generations: {:1.1f} s'.format(t1-t0))
 
 # Print population size
-print pop.N
+print(pop.N)
 
 # Test divergence / diversity statistics
-print pop.get_divergence_statistics()
-print pop.get_diversity_statistics()
+print(pop.get_divergence_statistics())
+print(pop.get_diversity_statistics())
 
 # Plot histograms
 plt.ion()

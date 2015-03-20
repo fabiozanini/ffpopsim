@@ -333,11 +333,11 @@ def set_trait_landscape(self,
 
     # Set fitness valleys
     for vi in xrange(number_valleys):
-        pos = np.random.random_integers(L/3-100)
+        pos = np.random.random_integers(L//3-100)
         d = int(np.random.exponential(10) + 1)
         valley_str = np.random.exponential(valley_strength)
         if number_valleys:
-            print 'valley:', pos*3, valley_str
+            print('valley:', pos*3, valley_str)
         (f1,f2,f12)=add_valley(valley_str)
         single_locus_effects[pos*3+1]+=f1
         single_locus_effects[(pos+d)*3+1]+=f2
@@ -345,10 +345,10 @@ def set_trait_landscape(self,
     
     # Set epitopes (bumps, i.e. f_DM < d_WT << f_SM)
     for ei in xrange(number_epitopes):
-        pos = np.random.random_integers(L/3-10)
+        pos = np.random.random_integers(L//3-10)
         epi_strength = np.random.exponential(epitope_strength)
         if number_epitopes:
-                print 'epitope', pos*3, epi_strength
+                print('epitope', pos*3, epi_strength)
         epi, f1,f2,f12=add_epitope(epi_strength)
         single_locus_effects[(pos+epi[0])*3+1]+=f1
         single_locus_effects[(pos+epi[1])*3+1]+=f2

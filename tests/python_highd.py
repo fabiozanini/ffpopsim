@@ -4,6 +4,7 @@ author:     Fabio Zanini
 date:       22/08/12
 content:    Test script for the python bindings (haploid_highd)
 '''
+from __future__ import print_function, division
 
 # Import module
 import sys
@@ -34,7 +35,7 @@ rep[np.random.random(L) > 0.5] = -0.1
 pop.set_trait_additive(rep)
 
 # Show the additive part of the fitness landscape
-print pop.get_trait_additive()
+print(pop.get_trait_additive())
 
 # Test population initialization
 pop.track_locus_genealogy([3,6])
@@ -45,14 +46,14 @@ pop.outcrossing_rate = 1e-2
 pop.crossover_rate = 1e-3
 
 # Test allele frequency readout
-print np.max(pop.get_allele_frequency(4))
+print(np.max(pop.get_allele_frequency(4)))
 
 # Test evolution
 from time import time as ti
 t0 = ti()
 pop.evolve(30)
 t1 = ti()
-print 'Time for evolving population for 30 generations: {:1.1f} s'.format(t1-t0)
+print('Time for evolving population for 30 generations: {:1.1f} s'.format(t1-t0))
 
 ## Write genotypes
 #pop.write_genotypes('test.txt', 100)
@@ -65,7 +66,7 @@ print 'Time for evolving population for 30 generations: {:1.1f} s'.format(t1-t0)
 #pop.plot_diversity_histogram(color='g')
 
 # Look at the genealogy
-print pop.genealogy
+print(pop.genealogy)
 tree = pop.genealogy.get_tree(3)
 subtree = tree.create_subtree_from_keys([tree.leafs[1], tree.leafs[2]])
 

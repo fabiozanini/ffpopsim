@@ -435,7 +435,7 @@ rooted_tree create_subtree_from_keys(vector <tree_key_t> leaves) {
 Returns:
    - tree: string of the tree in Newick format.
 
-.. note:: You can pipe the output of this function to a cStingIO.StringIO
+.. note:: You can pipe the output of this function to a io.StringIO
           for further manipulations.
 ") print_newick;
 
@@ -448,7 +448,7 @@ Parameters:
 Returns:
    - subtree: string of the subtree in Newick format.
 
-.. note:: You can pipe the output of this function to a cStingIO.StringIO
+.. note:: You can pipe the output of this function to a io.StringIO
           for further manipulations.
 ") subtree_newick;
 
@@ -513,11 +513,11 @@ def to_Biopython_tree(self):
     Returns:
        - tree: Biopython.Phylo phylogenetic tree representation of self
     '''
-    from cStringIO import StringIO
+    from io import BytesIO
     from Bio import Phylo
      
     treedata = self.print_newick()
-    handle = StringIO(treedata)
+    handle = BytesIO(treedata)
     tree = Phylo.read(handle, "newick")
     return tree
 %}
@@ -830,17 +830,35 @@ if len(args):
 }
 
 /* read only parameters */
-%ignore get_number_of_loci;
-%feature("autodoc", "Number of loci (read-only)") L;
-%feature("autodoc", "Number of loci (read-only)") number_of_loci;
-const int L;
-const int number_of_loci;
+%ignore L;
+%rename (_get_number_of_loci) get_number_of_loci;
+%pythoncode %{
+@property
+def L(self):
+    '''Number of loci (read-only)'''
+    return self._get_number_of_loci()
 
-%ignore get_population_size;
-%feature("autodoc", "Population size (read-only)") N;
-%feature("autodoc", "Population size (read-only)") population_size;
-const int N;
-const int population_size;
+
+@property
+def number_of_loci(self):
+    '''Number of loci (read-only)'''
+    return self._get_number_of_loci()
+%}
+
+%ignore N;
+%rename (_get_population_size) get_population_size;
+%pythoncode %{
+@property
+def N(self):
+    '''Population size (read-only)'''
+    return self._get_population_size()
+
+
+@property
+def population_size(self):
+    '''Population size (read-only)'''
+    return self._get_population_size()
+%}
 
 %ignore get_generation;
 %ignore set_generation;
@@ -1070,7 +1088,7 @@ def status(self):
                 par = 'FREE_RECOMBINATION'
             else:
                 par = 'CROSSOVERS'
-        print ('{:<'+str(lenmax + 2)+'s}').format(strin)+'\t'+str(par)
+        print(('{:<'+str(lenmax + 2)+'s}').format(strin)+'\t'+str(par))
 %}
 
 /* initialize wildtype */
@@ -1998,7 +2016,7 @@ def get_diversity_histogram(self, bins=10, chunks=None, every=1, n_sample=1000, 
         genotypes = genotypes[:,ind]
     
     # Calculate diversity
-    genotypes1 = genotypes[:genotypes.shape[0] / 2]
+    genotypes1 = genotypes[:genotypes.shape[0] // 2]
     genotypes2 = genotypes[-genotypes1.shape[0]:]
     div = (genotypes1 != genotypes2).sum(axis=1)
     

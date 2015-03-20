@@ -189,17 +189,35 @@ def copy(self, rng_seed=0):
 %feature("autodoc", "outcrossing rate (probability of sexual reproduction per generation)") outcrossing_rate;
 
 /* read only attributes */
-%ignore get_number_of_loci;
-%feature("autodoc", "Number of loci (read-only)") L;
-%feature("autodoc", "Number of loci (read-only)") number_of_loci;
-const int L;
-const int number_of_loci;
+%ignore L;
+%rename (_get_number_of_loci) get_number_of_loci;
+%pythoncode %{
+@property
+def L(self):
+    '''Number of loci (read-only)'''
+    return self._get_number_of_loci()
 
-%ignore get_population_size;
-%feature("autodoc", "Population size (read-only)") N;
-%feature("autodoc", "Population size (read-only)") population_size;
-const int N;
-const int population_size;
+
+@property
+def number_of_loci(self):
+    '''Number of loci (read-only)'''
+    return self._get_number_of_loci()
+%}
+
+%ignore N;
+%rename (_get_population_size) get_population_size;
+%pythoncode %{
+@property
+def N(self):
+    '''Population size (read-only)'''
+    return self._get_population_size()
+
+
+@property
+def population_size(self):
+    '''Population size (read-only)'''
+    return self._get_population_size()
+%}
 
 %ignore get_generation;
 %ignore set_generation;
@@ -259,7 +277,7 @@ def status(self):
                 par = 'SINGLE_CROSSOVER'
             else:
                 par = 'CROSSOVERS'
-        print ('{:<'+str(lenmax + 2)+'s}').format(strin)+'\t'+str(par)
+        print(('{:<'+str(lenmax + 2)+'s}').format(strin)+'\t'+str(par))
 %}
 
 /* initialize frequencies */
@@ -510,7 +528,7 @@ Parameters:
             ratesm = _np.repeat(rates, L * 2).reshape(2,L)
         else:
             ratesm = _np.vstack([_np.repeat(rates, L), _np.repeat(rates_back, L)])
-    elif (_np.rank(rates) != 1) or ((rates_back is not None) and (_np.rank(rates_back) != 1)):
+    elif (_np.ndim(rates) != 1) or ((rates_back is not None) and (_np.ndim(rates_back) != 1)):
         raise ValueError('Please input one/two numbers or arrays.')
     else:
         if rates_back is None:
