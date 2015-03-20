@@ -243,13 +243,13 @@ void _set_crossover_chunk(int value, int i) {($self->crossover)[i] = value;}
 @property
 def crossover(self):
     '''Crossover of node'''
-    return [self._get_crossover_chunk(i) for i in xrange(2)]
+    return [self._get_crossover_chunk(i) for i in range(2)]
 
 @crossover.setter
 def crossover(self, value):
     if len(value) != 2:
         raise ValueError('Crossover is a pair of integers.')
-    [self._set_crossover_chunk(value[i], i) for i in xrange(2)]
+    [self._set_crossover_chunk(value[i], i) for i in range(2)]
 %}
 
 /* cloak weight_distribution with a Pythonic flavour */
@@ -304,7 +304,7 @@ int _get_segment_chunk(int i) {return ($self->segment)[i];}
 @property
 def segment(self):
     '''Segment of edge'''
-    return [self._get_segment_chunk(i) for i in xrange(2)]
+    return [self._get_segment_chunk(i) for i in range(2)]
 %}
 
 /* read/write attributes */
@@ -513,11 +513,11 @@ def to_Biopython_tree(self):
     Returns:
        - tree: Biopython.Phylo phylogenetic tree representation of self
     '''
-    from io import BytesIO
+    from io import StringIO
     from Bio import Phylo
      
     treedata = self.print_newick()
-    handle = BytesIO(treedata)
+    handle = StringIO(treedata)
     tree = Phylo.read(handle, "newick")
     return tree
 %}
@@ -1003,7 +1003,7 @@ def dump(self, filename, format='bz2', include_genealogy=False):
             
         newGenerations = []
         for locus in self.genealogy.loci:
-            newGenerations.append(map(serialize_leaf, self.genealogy._get_newGeneration(locus)))
+            newGenerations.append([serialize_leaf(l) for l in self.genealogy._get_newGeneration(locus)])
         pop_dict['_newGenerations'] = newGenerations
 
     
@@ -1044,7 +1044,7 @@ def copy(self, rng_seed=0):
     pop.circular = self.circular
 
     # Fitness
-    for i in xrange(self.number_of_traits):
+    for i in range(self.number_of_traits):
         pop.set_trait_additive(self.get_trait_additive(i), i)
         for coeff in self.get_trait_epistasis(i):
             pop.add_trait_coefficient(coeff[0], coeff[1], i)
@@ -1200,7 +1200,7 @@ int _set_genotypes_and_ancestral_state(double* genotypes, int len1, double* coun
                 gt.push_back(temp);
         }
                 vector <int> ancestral_state($self->L(), 0);
-                for (size_t locus=0; locus<len3; locus++){
+                for (size_t locus=0; locus < (size_t)len3; locus++){
                   ancestral_state[locus]=(anc_state[locus]<0.5)?0:1;
                 }
         return $self->set_genotypes_and_ancestral_state(gt, ancestral_state);
@@ -1683,7 +1683,7 @@ Returns:
 def get_fitnesses(self):
     '''Get the fitness of all clones.'''
     f = _np.zeros(self.number_of_clones)
-    for i in xrange(self.number_of_clones):
+    for i in range(self.number_of_clones):
         f[i] = self.get_fitness(i)
     return f
 %}
@@ -1713,8 +1713,8 @@ Returns:
 def get_traits(self):
     '''Get all traits from all clones'''
     t = _np.zeros((self.number_of_clones, self.number_of_traits))
-    for i in xrange(self.number_of_clones):
-        for j in xrange(self.number_of_traits):
+    for i in range(self.number_of_clones):
+        for j in range(self.number_of_traits):
             t[i, j] = self.get_trait(i, j)
     return t
 %}
@@ -1741,7 +1741,7 @@ Returns:
 def get_clone_sizes(self):
     '''Get the size of all clones.'''
     s = _np.zeros(self.number_of_clones, int)
-    for i in xrange(self.number_of_clones):
+    for i in range(self.number_of_clones):
         s[i] = self.get_clone_size(i)
     return s
 %}
@@ -1778,7 +1778,7 @@ def get_genotypes(self):
     .. note:: this function does not return the sizes of each clone.
     '''
     genotypes = _np.zeros((self.number_of_clones, self.number_of_loci), bool)
-    for i in xrange(self.number_of_clones):
+    for i in range(self.number_of_clones):
         genotypes[i] = self.get_genotype(i)
     return genotypes
 %}
@@ -1840,7 +1840,7 @@ def random_genomes(self, n):
 
     L = self.number_of_loci
     genotypes = _np.zeros((n, L), bool)
-    for i in xrange(genotypes.shape[0]):
+    for i in range(genotypes.shape[0]):
         genotypes[i] = self.get_genotype(self.random_clone())
     return genotypes
 %}
@@ -1866,7 +1866,7 @@ def random_clones(self, n):
     Returns:
        - clones: clone indices
     '''
-    return _np.array([self.random_clone() for i in xrange(n)], int)
+    return _np.array([self.random_clone() for i in range(n)], int)
 %}
 
 /* divergence/diversity/fitness distributions and plot */
@@ -1885,7 +1885,7 @@ def get_fitness_histogram(self, n_sample=1000, **kwargs):
        - h: numpy.histogram of fitness in the population
     '''
 
-    fit = [self.get_fitness(self.random_clone()) for i in xrange(n_sample)]
+    fit = [self.get_fitness(self.random_clone()) for i in range(n_sample)]
     h = _np.histogram(fit, **kwargs)
     return h
     
@@ -1903,7 +1903,7 @@ def plot_fitness_histogram(self, axis=None, n_sample=1000, **kwargs):
     '''
 
     import matplotlib.pyplot as plt
-    fit = [self.get_fitness(self.random_clone()) for i in xrange(n_sample)]
+    fit = [self.get_fitness(self.random_clone()) for i in range(n_sample)]
     
     if axis is None:
         fig = plt.figure()
@@ -2209,7 +2209,7 @@ def load_haploid_highd(filename, gen_loci=[], include_genealogy=False):
         pop.set_genotypes_and_ancestral_state(genotypes, 
                                               clone_sizes, 
                                               pop_dict['ancestral'])
-        for (locus, tree_s) in pop_dict['trees'].iteritems():
+        for (locus, tree_s) in pop_dict['trees'].items():
             tree = rooted_tree()
             tree.read_newick(tree_s)
             pop._set_tree_in_genealogy(locus, tree)
@@ -2223,8 +2223,8 @@ def load_haploid_highd(filename, gen_loci=[], include_genealogy=False):
             leaf.parent_node = tree_key(*serial['parent_node'])
             return leaf
 
-        for i, locus in enumerate(old_loci):
-            pop._set_newGeneration_in_genealogy(locus, map(deserialize_leaf, pop_dict['_newGenerations'][i]))
+        for (i, locus) in enumerate(old_loci):
+            pop._set_newGeneration_in_genealogy(locus, [deserialize_leaf(l) for l in pop_dict['_newGenerations'][i]])
 
 
     else:

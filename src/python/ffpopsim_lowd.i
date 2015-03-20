@@ -51,7 +51,7 @@ def binarify(gt, L=0):
         L=1
         while gt > ((1<<L) - 1):
             L += 1
-    return _np.array(map(lambda l: bool(gt&(1<<(L-l-1))),range(L)))
+    return _np.array([bool(gt&(1<<(L-l-1))) for l in range(L)])
 
 
 def integerify(b):
@@ -71,7 +71,7 @@ def integerify(b):
        Out[1]: 3
     '''
     L = len(b)
-    a = [(1<<(L-l-1)) for l in xrange(L)]
+    a = [(1<<(L-l-1)) for l in range(L)]
     return _np.dot(b,a)
 %}
 /*****************************************************************************/
@@ -167,11 +167,11 @@ def copy(self, rng_seed=0):
     pop.outcrossing_rate = self.outcrossing_rate
 
     # Fitness
-    pop.set_fitness_function(range(1<<self.L), self.get_fitnesses())
+    pop.set_fitness_function(list(range(1<<self.L)), self.get_fitnesses())
 
     # Population parameters
     pop.carrying_capacity = self.carrying_capacity
-    pop.set_genotypes(range(1<<self.L), self.get_genotype_frequencies() * self.N)
+    pop.set_genotypes(list(range(1<<self.L)), self.get_genotype_frequencies() * self.N)
 
     # Evolution
     pop.generation = self.generation
@@ -391,7 +391,7 @@ Returns:
                           'hence recombination rates are not defined.'+
                           ' Could you possibly mean outcrossing rate?'))
     elif rm in [SINGLE_CROSSOVER, CROSSOVERS]:
-        return _np.array([self.get_recombination_rate(i) for i in xrange(self.L - 1)])
+        return _np.array([self.get_recombination_rate(i) for i in range(self.L - 1)])
     else:
         raise RuntimeError('Recombination model not found')
 %}
@@ -483,13 +483,13 @@ landscape.
                 return mrs
     else:
         if direction is not None:
-            mrs = _np.array([self._get_mutation_rate(l, direction) for l in xrange(self.L)])
+            mrs = _np.array([self._get_mutation_rate(l, direction) for l in range(self.L)])
             if len(_np.unique(mrs)) == 1:
                 return mrs[0]
             else:
                 return mrs
         else:
-            mrs = _np.array([[self._get_mutation_rate(l, d) for l in xrange(self.L)] for d in [0,1]])
+            mrs = _np.array([[self._get_mutation_rate(l, d) for l in range(self.L)] for d in [0,1]])
             if len(_np.unique(mrs)) == 1:
                 return mrs[0,0]
             else:
@@ -611,7 +611,7 @@ if genotype >= (1<<self.L):
 %{
 def get_genotype_frequencies(self):
     '''Get the frequency of each genotype.'''
-    return _np.array([self.get_genotype_frequency(l) for l in xrange(1<<self.L)])
+    return _np.array([self.get_genotype_frequency(l) for l in range(1<<self.L)])
 %}
 
 /* get allele frequencies */
@@ -633,7 +633,7 @@ if locus >= (self.L):
 %{
 def get_allele_frequencies(self):
     '''Get the frequencies of all + alleles'''
-    return _np.array([self.get_allele_frequency(l) for l in xrange(self.L)])
+    return _np.array([self.get_allele_frequency(l) for l in range(self.L)])
 %}
 
 %feature("autodoc",
@@ -725,7 +725,7 @@ def random_genomes(self, n_sample):
     counts = _np.random.multinomial(n_sample, self.get_genotype_frequencies())
     ind = counts.nonzero()[0]
     counts = counts[ind]
-    sample = _np.concatenate([_np.repeat(ind[i], counts[i]) for i in xrange(len(ind))])
+    sample = _np.concatenate([_np.repeat(ind[i], counts[i]) for i in range(len(ind))])
     _np.random.shuffle(sample)
     return sample
 %}
@@ -824,7 +824,7 @@ def get_fitness_histogram(self, n_sample=1000, **kwargs):
     gt = self.random_genomes(n_sample)
 
     # Calculate fitness
-    fit = _np.array([self.get_fitness(gt[i]) for i in xrange(n_sample)])
+    fit = _np.array([self.get_fitness(gt[i]) for i in range(n_sample)])
 
     return _np.histogram(fit, **kwargs)
 
@@ -844,7 +844,7 @@ def plot_fitness_histogram(self, axis=None, n_sample=1000, **kwargs):
     gt = self.random_genomes(n_sample)
 
     # Calculate fitness
-    fit = _np.array([self.get_fitness(gt[i]) for i in xrange(n_sample)])
+    fit = _np.array([self.get_fitness(gt[i]) for i in range(n_sample)])
 
     # Plot
     if axis is None:
@@ -871,7 +871,7 @@ def get_divergence_statistics(self, n_sample=1000):
     gt = self.random_genomes(n_sample)
 
     # Calculate divegence
-    div = _np.array([binarify(gt[i], L).sum() for i in xrange(n_sample)], int)
+    div = _np.array([binarify(gt[i], L).sum() for i in range(n_sample)], int)
 
     return stat(div.mean(), div.var())
 
@@ -894,7 +894,7 @@ def get_divergence_histogram(self, bins=10, n_sample=1000, **kwargs):
     gt = self.random_genomes(n_sample)
 
     # Calculate divergence
-    div = _np.array([binarify(gt[i], self.L).sum() for i in xrange(n_sample)], int)
+    div = _np.array([binarify(gt[i], self.L).sum() for i in range(n_sample)], int)
 
     return _np.histogram(div, bins=bins, **kwargs)
 
@@ -914,7 +914,7 @@ def plot_divergence_histogram(self, axis=None, n_sample=1000, **kwargs):
     gt = self.random_genomes(n_sample)
 
     # Calculate divegence
-    div = _np.array([binarify(gt[i], L).sum() for i in xrange(n_sample)], int)
+    div = _np.array([binarify(gt[i], L).sum() for i in range(n_sample)], int)
 
     # Plot
     if axis is None:
@@ -943,7 +943,7 @@ def get_diversity_statistics(self, n_sample=1000):
     gt2 = self.random_genomes(n_sample)
 
     # Calculate diversity
-    div = _np.array([binarify(gt1[i] ^ gt2[i], self.L).sum() for i in xrange(n_sample)], int)
+    div = _np.array([binarify(gt1[i] ^ gt2[i], self.L).sum() for i in range(n_sample)], int)
 
     return stat(div.mean(), div.var())
 
@@ -967,7 +967,7 @@ def get_diversity_histogram(self, bins=10, n_sample=1000, **kwargs):
     gt2 = self.random_genomes(n_sample)
 
     # Calculate diversity
-    div = _np.array([binarify(gt1[i] ^ gt2[i], self.L).sum() for i in xrange(n_sample)], int)
+    div = _np.array([binarify(gt1[i] ^ gt2[i], self.L).sum() for i in range(n_sample)], int)
 
     # Calculate histogram
     return _np.histogram(div, bins=bins, **kwargs)
@@ -988,7 +988,7 @@ def plot_diversity_histogram(self, axis=None, n_sample=1000, **kwargs):
     gt2 = self.random_genomes(n_sample)
 
     # Calculate diversity
-    div = _np.array([binarify(gt1[i] ^ gt2[i], self.L).sum() for i in xrange(n_sample)], int)
+    div = _np.array([binarify(gt1[i] ^ gt2[i], self.L).sum() for i in range(n_sample)], int)
 
     # Plot
     if axis is None:

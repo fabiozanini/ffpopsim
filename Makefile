@@ -55,7 +55,7 @@
 # Please set your Python 2.7 executable if you want to build the Python
 # bindings. If you are only interested in the C++ part of the library,
 # comment out the following line
-PYTHON := python2.7
+PYTHON := python3
 
 # Note: please look in 'setup.py' if you are building the Python extension!
 #       You can call distutils with 'setup.py' directly if you prefer. The
@@ -275,6 +275,8 @@ SWIG_LOWD := ffpopsim_lowd.i
 SWIG_HIGHD := ffpopsim_highd.i
 SWIG_HIV := hivpopulation.i
 SWIG_TYPEMAPS := ffpopsim_typemaps.i
+SWIG_NUMPY := numpy.i
+SWIG_NUMPYFGM := pyfragments.swg
 
 SWIG_WRAP := $(SWIG_MODULE:%.i=%_wrap.cpp)
 
@@ -305,11 +307,11 @@ clean-python-all:
 ##==========================================================================
 # SWIG (USED FOR PYTHON BINDINGS)
 ##==========================================================================
-SWIGFLAGS := -c++ -python -O -castmode -keyword
+SWIGFLAGS := -c++ -python -O -castmode -keyword -py3
 
 swig: $(PYBDIR)/$(SWIG_WRAP) $(PYBDIR)/$(PYMODULE)
 
-$(PYBDIR)/$(SWIG_WRAP) $(PYBDIR)/$(PYMODULE): $(PYBDIR)/$(SWIG_MODULE) $(PYBDIR)/$(SWIG_GENERIC) $(PYBDIR)/$(SWIG_LOWD) $(PYBDIR)/$(SWIG_HIGHD) $(PYBDIR)/$(SWIG_HIV) $(PYBDIR)/$(SWIG_TYPEMAPS)
+$(PYBDIR)/$(SWIG_WRAP) $(PYBDIR)/$(PYMODULE): $(PYBDIR)/$(SWIG_MODULE) $(PYBDIR)/$(SWIG_GENERIC) $(PYBDIR)/$(SWIG_LOWD) $(PYBDIR)/$(SWIG_HIGHD) $(PYBDIR)/$(SWIG_HIV) $(PYBDIR)/$(SWIG_TYPEMAPS) $(PYBDIR)/$(SWIG_NUMPY) $(PYBDIR)/$(SWIG_NUMPYFGM)
 	$(SWIG) $(SWIGFLAGS) -o $(PYBDIR)/$(SWIG_WRAP) $(PYBDIR)/$(SWIG_MODULE)
 
 clean-swig:

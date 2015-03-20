@@ -328,8 +328,8 @@ int haploid_highd::set_genotypes_and_ancestral_state(vector <genotype_value_pair
 	last_clone = 0;
 	provide_at_least(gt.size());
 
-	if (anc_state.size()==L()){
-	  for (size_t locus=0; locus<L(); locus++){
+	if (anc_state.size()==(size_t)L()){
+	  for (size_t locus=0; locus < (size_t)L(); locus++){
 		ancestral_state[locus]=anc_state[locus];
 	  }
 	}else{

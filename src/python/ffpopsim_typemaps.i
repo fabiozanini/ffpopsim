@@ -21,7 +21,10 @@
 /*******************************************************************/
 /* Typemaps for FFPopSim                                           */
 /*******************************************************************/
-/* convert between Python bool array and boost::dynamic_bitset */
+/* convert between Python bool array and boost::dynamic_bitset
+NOTE: this is tricky because numpy.i (the numpy SWIG interface file)
+does not include bool type conversions for apparently trivial reasons
+*/
 %typecheck(SWIG_TYPECHECK_DOUBLE_ARRAY,
            fragment="NumPy_Macros")
   boost::dynamic_bitset<>
@@ -51,15 +54,16 @@
 {
         unsigned long L = $1.size();
         npy_intp dims[1] = {(npy_intp) L};
-        PyObject *array = PyArray_ZEROS(1, dims, NPY_BOOL, 0);
+        PyArrayObject *array = (PyArrayObject*)PyArray_ZEROS(1, dims, NPY_BOOL, 0);
         if (!array) SWIG_fail;
 
+        /* FIX FIX FIX */
         /* no checks on memory alignments, since we create a new array */
         bool *ptr = (bool *)PyArray_DATA(array);
-        for(int i=0; i < L; i++, ptr++)
+        for(unsigned long i=0; i < L; i++, ptr++)
                 if($1.test(i))
                         *ptr = true;
-        $result = array;
+        $result = (PyObject*)array;
 }
 
 /* STL::Vector (FIX) */

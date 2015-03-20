@@ -30,7 +30,7 @@ from numpy import distutils as npdis
 #									   #
 ############################################################################
 # Please add your include folders to the following list, where the compiler
-# can find GSL, BOOST, and Python 2.7 headers.
+# can find GSL, BOOST, and Python 3 headers.
 includes = ['/usr/include', '/usr/local/include', '/opt/local/include']
 
 # Please add your shared library folders to the following list, where the linker
